@@ -1,0 +1,285 @@
+-- snake controls
+dirs={
+ [0]={x= 0,y=-1}, --up
+ [1]={x= 0,y= 1}, --down
+ [2]={x=-1,y= 0}, --left
+ [3]={x= 1,y= 0}, --right
+ [4]={x= 0,y= 0}  --stop
+ }
+ 
+-- initial function to set up defaul values
+function init()
+ t=0 --time
+ powerUpTimer=0
+ heartTimer=0
+ score=0
+ snake={
+  {x=15,y=8}, --tail
+  {x=14,y=8}, --neck
+  {x=13,y=8}  --head
+ }
+ food={x=0,y=0}
+ heart={x=0,y=0}
+ dir=dirs[0]
+ rotate_neck=0
+ rotate_tail=0
+ powerUp = false
+ throughWalls = false
+end
+
+function startOver()
+ t=0 --time
+ powerUpTimer=0
+ heartTimer=0
+ score=0
+ head.x=15
+ head.y=8
+ -- resetting snake lenght
+ snake={
+  {x=15,y=8}, --tail
+  {x=14,y=8}, --neck
+  {x=13,y=8} --head
+ }
+end
+
+function gameOver()
+ --checking colliding with itself
+ for i,v in pairs(snake) do
+  if i~=#snake and 
+   v.x==head.x and
+   v.y==head.y then
+    dir=dirs[4]
+    spr(DEAD,head.x*8,head.y*8,0,1,1)
+    cls(3)
+    print("GAME OVER",90,50)
+    print("press any key to play again",50,100)
+   if btnp()~=0 then
+    startOver()
+   end
+  end
+ end
+ -- check collision with borders
+ if head.x<0 or
+  head.x>29 or
+  head.y<0 or
+  head.y>16 then
+   cls(3)
+   print("GAME OVER",90,50)
+   print("press any key to play again",50,100)
+  if btnp()~=0 then
+   startOver()
+  end
+ end
+end
+
+function throughWalls()
+ -- wrapping around borders 
+  table.insert(snake,#snake+1,
+  {x=(head.x+dir.x)%30,
+   y=(head.y+dir.y)%17})
+end
+
+-- slowing up movement by
+-- decreasing refresh rate
+function update()
+ if powerUp then
+  return t%5==0
+ else
+  return t%10==0
+ end
+end
+
+function gotFood()
+ -- collision check with food
+ if head.x==food.x and head.y==food.y then
+  return true
+ end
+end
+
+function setFood()
+ -- random placement of food
+ food.x=math.random(0,29)
+ food.y=math.random(0,16)
+ -- if food is placed on top of snake it will placed again
+ for i,v in pairs(snake) do
+  if v.x==food.x and v.y==food.y then
+   setFood()
+  end
+ end
+end
+
+function gotHeart()
+ -- collision check with food
+ if head.x==heart.x and head.y==heart.y then
+  return true
+ end
+end
+
+function setHeart()
+ -- random placement of heart
+ heart.x=math.random(0,29)
+ heart.y=math.random(0,16)
+ -- if heart is placed on top of snake it will placed again
+ for i,v in pairs(snake) do
+  if v.x==heart.x and v.y==heart.y then
+   setHeart()
+  end
+ end
+end
+
+-- sprites
+MOUTH_OPEN=6
+MOUTH_CLOSE=7
+MOUTH_HALF_CLOSE=8
+NECK=2
+TAIL=3
+DEAD=1
+NECK_EAT=17
+MOUTH_OPEN_YELLOW=22
+MOUTH_CLOSE_YELLOW=23
+NECK_YELLOW=18
+TAIL_YELLOW=19
+
+-- power-up sprites
+HEART_P=10
+HEART_Y=11
+
+function draw()
+ for i,v in pairs(snake) do 
+  if powerUp == false then
+   spr(NECK,v.x*8,v.y*8,3,1,1,rotate_neck)   
+   spr(TAIL,tail.x*8,tail.y*8,2,1,1,rotate_tail)
+   spr(MOUTH_OPEN,head.x*8,head.y*8,4,1,1,rotate_head)
+  else
+   spr(NECK_YELLOW,v.x*8,v.y*8,3,1,1,rotate_neck)   
+   spr(TAIL_YELLOW,tail.x*8,tail.y*8,2,1,1,rotate_tail)
+   spr(MOUTH_OPEN_YELLOW,head.x*8,head.y*8,2,1,1,rotate_head)  
+  end
+  
+  --vessapaperi
+  spr(4,food.x*8,food.y*8,0)
+ 
+  if powerUpTimer > 300 then 
+   drawHeart()
+  end
+   
+  if gotFood() or gotHeart() then
+   if powerUp == false then
+    spr(MOUTH_CLOSE,head.x*8,head.y*8,0,1,1,rotate_head)
+    spr(NECK_EAT,neck.x*8,neck.y*8,0,1,1,rotate_neck)
+   else
+    spr(MOUTH_CLOSE_YELLOW,head.x*8,head.y*8,0,1,1,rotate_head)
+    spr(NECK_EAT_YELLOW,neck.x*8,neck.y*8,0,1,1,rotate_neck)
+   end
+  end
+   
+  --rotate head
+  if dir==dirs[1] then
+   rotate_head=2
+  elseif dir==dirs[2] then
+   rotate_head=1
+  elseif dir==dirs[3] then
+   rotate_head=3
+  else
+   rotate_head=0 
+  end
+  -- rotate neck
+  if dir==dirs[2] or dir==dirs[3] then
+   rotate_neck=1
+  else
+   rotate_neck=0
+  end
+  -- rotate tail
+  if dir==dirs[1] then
+   rotate_tail=2
+  elseif dir==dirs[2] then
+   rotate_tail=1
+  elseif dir==dirs[3] then
+   rotate_tail=3
+  else
+   rotate_tail=0 
+  end
+ end
+end
+
+-- draw heart
+function drawHeart()
+ if t/10%2==0 then
+  spr(HEART_P,heart.x*8,heart.y*8,2)
+ else
+  spr(HEART_Y,heart.x*8,heart.y*8,2)
+ end
+end
+
+-- set default values
+init()
+setFood()
+setHeart()
+
+-- main function
+function TIC()
+ cls(3)
+ t=t+1
+ heartTimer=heartTimer+1
+ powerUpTimer=powerUpTimer+1
+ 
+ --print(t)
+ 
+ head = snake[#snake]
+ neck = snake[#snake-1]
+ tail = snake[1]
+ 
+ gameOver()
+ 
+ draw()
+ 
+ print("Score: "..score,5,5,8)
+ 
+ if update() then
+ 
+  if throughWalls then
+  -- wrapping around borders 
+   table.insert(snake,#snake+1,
+    {x=(head.x+dir.x)%30,
+     y=(head.y+dir.y)%17}) 
+  else 
+  -- moving by adding piece
+  -- in front of head
+   table.insert(snake,#snake+1,
+    {x=(head.x+dir.x),
+     y=(head.y+dir.y)})
+  end
+   
+  if not gotFood() then
+   table.remove(snake,1) --tail remove
+  else
+   setFood()
+   score=score+1
+  end
+  
+  if gotHeart() then
+   powerUp = true
+   throughWalls = true
+   setHeart() --new heart is set
+   powerUpTimer=1 --reset powerUpTimer
+  end
+ end 
+ 
+ if (powerUpTimer/60)%5==0 then
+  powerUp = false
+  throughWalls = false
+ end
+ -- set direction to snake
+ local last_dir=dir
+ if btn(0) then dir=dirs[0]     --up
+ elseif btn(1) then dir=dirs[1] --down
+ elseif btn(2) then dir=dirs[2] --left
+ elseif btn(3) then dir=dirs[3] --right
+ end
+  
+ -- cannot go inside of itself
+ if head.x+dir.x==neck.x and
+  head.y+dir.y==neck.y then
+  dir=last_dir
+ end
+end
